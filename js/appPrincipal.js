@@ -1,46 +1,131 @@
-const cards = document.getElementById("card-dinamicas");
-const templateCard = document.getElementById("template-card").content;
-const fragment = document.createDocumentFragment();
+const formulario = document.querySelector("#formulario");
+const cardsEstudiantes = document.querySelector("#cardsEstudiantes");
+const cardsProfesores = document.querySelector("#cardsProfesores");
+const templateEstudiante = document.querySelector(
+  "#templateEstudiante"
+).content;
+const templateProfesor = document.querySelector("#templateProfesor").content;
 
-document.addEventListener("DOMContentLoaded", () => {
-  fetchData();
+const estudiantes = [];
+const profesores = [];
+
+document.addEventListener("click", (e) => {
+  if (e.target.dataset.nombre) {
+    if (e.target.matches(".btn-success")) {
+      estudiantes.map((item) => {
+        if (item.nombre === e.target.dataset.nombre) {
+          item.setEstado = true;
+          console.log(item);
+        }
+        return item;
+      });
+    }
+    if (e.target.matches(".btn-danger")) {
+      estudiantes.map((item) => {
+        if (item.nombre === e.target.dataset.nombre) {
+          item.setEstado = false;
+          console.log(item);
+        }
+        return item;
+      });
+    }
+    Persona.pintarPersonaUI(estudiantes, "Estudiante");
+  }
 });
 
-const fetchData = async () => {
-  try {
-    loadingData(true);
-
-    const res = await fetch("https://rickandmortyapi.com/api/character");
-    const data = await res.json();
-    pintarCard(data);
-  } catch (error) {
-    console.log(error);
-  } finally {
-    loadingData(false);
+class Persona {
+  constructor(nombre, edad) {
+    this.nombre = nombre;
+    this.edad = edad;
   }
-};
 
-const pintarCard = (data) => {
-  data.results.forEach((item) => {
-    const clone = templateCard.cloneNode(true);
-    clone.querySelector("h5").textContent = item.name;
-    clone.querySelector("p").textContent = item.species;
-    clone.querySelector("img").setAttribute("src", item.image);
+  static pintarPersonaUI(personas, tipo) {
+    if (tipo === "Estudiante") {
+      cardsEstudiantes.textContent = "";
+      const fragment = document.createDocumentFragment();
+      personas.forEach((item) => {
+        fragment.appendChild(item.agregarNuevoEstudiante());
+      });
 
-    // Guardo en el fragment para evitar el reflow :)
-    fragment.appendChild(clone);
-  });
+      cardsEstudiantes.appendChild(fragment);
+    }
+    if (tipo === "Profesor") {
+      cardsProfesores.textContent = "";
+      const fragment = document.createDocumentFragment();
+      personas.forEach((item) => {
+        fragment.appendChild(item.agregarNuevoProfesor());
+      });
 
-  cards.appendChild(fragment);
-};
-
-// Pintar el loading
-
-const loadingData = (estado) => {
-  const loading = document.getElementById("loading");
-  if (estado) {
-    loading.classList.remove("d-none");
-  } else {
-    loading.classList.add("d-none");
+      cardsProfesores.appendChild(fragment);
+    }
   }
-};
+}
+
+class Estudiante extends Persona {
+  #estado = false;
+  #estudiante = "Estudiante";
+
+  set setEstado(estado) {
+    this.#estado = estado;
+  }
+
+  get getEstudiante() {
+    return this.#estudiante;
+  }
+
+  agregarNuevoEstudiante() {
+    const clone = templateEstudiante.cloneNode(true);
+    clone.querySelector("h5 .text-primary").textContent = this.nombre;
+    clone.querySelector("h6").textContent = this.getEstudiante;
+    clone.querySelector(".lead").textContent = this.edad;
+
+    if (this.#estado) {
+      clone.querySelector(".badge").className = "badge bg-success";
+      clone.querySelector(".btn-success").disabled = true;
+      clone.querySelector(".btn-danger").disabled = false;
+    } else {
+      clone.querySelector(".badge").className = "badge bg-danger";
+      clone.querySelector(".btn-danger").disabled = true;
+      clone.querySelector(".btn-success").disabled = false;
+    }
+
+    clone.querySelector(".badge").textContent = this.#estado
+      ? "Aprobado"
+      : "Reprobado";
+
+    clone.querySelector(".btn-success").dataset.nombre = this.nombre;
+    clone.querySelector(".btn-danger").dataset.nombre = this.nombre;
+
+    return clone;
+  }
+}
+
+class Profesor extends Persona {
+  #profesor = "Profesor";
+
+  agregarNuevoProfesor() {
+    const clone = templateProfesor.cloneNode(true);
+    clone.querySelector("h5").textContent = this.nombre;
+    clone.querySelector("h6").textContent = this.#profesor;
+    clone.querySelector(".lead").textContent = this.edad;
+    return clone;
+  }
+}
+
+formulario.addEventListener("submit", (e) => {
+  e.preventDefault();
+
+  const datos = new FormData(formulario);
+  const [nombre, edad, opcion] = [...datos.values()];
+
+  if (opcion === "Estudiante") {
+    const estudiante = new Estudiante(nombre, edad);
+    estudiantes.push(estudiante);
+    Persona.pintarPersonaUI(estudiantes, opcion);
+  }
+  if (opcion === "Profesor") {
+    const profesor = new Profesor(nombre, edad);
+    profesores.push(profesor);
+    Persona.pintarPersonaUI(profesores, opcion);
+  }
+});
